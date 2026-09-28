@@ -1,12 +1,9 @@
 @echo off
 chcp 65001 >nul
 
-set JAVA_HOME=C:\Users\Aleksandra\.jdks\openjdk-26.0.2.1
-set PATH=%JAVA_HOME%\bin;%PATH%
-
 if not exist out mkdir out
 
-javac -encoding UTF-8 -d out src\ru\miem\shell\Main.java
+"C:\Users\Aleksandra\.jdks\openjdk-26.0.2.1\bin\javac.exe" -encoding UTF-8 -d out src\ru\miem\shell\Main.java
 
 if errorlevel 1 (
     echo Ошибка компиляции
@@ -14,6 +11,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-java -cp out ru.miem.shell.Main
+"C:\Users\Aleksandra\.jdks\openjdk-26.0.2.1\bin\java.exe" -cp out ru.miem.shell.Main
 
 pause
