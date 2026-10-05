@@ -94,7 +94,7 @@ public class Main {
         } else if (cmd.equals("exit")) {
             System.exit(0);
         } else {
-            output.append("unknown command: " + cmd + "\n");
+            output.append("Unknown command: " + cmd + "\n");
         }
     }
 }
