@@ -1,0 +1,5 @@
+ls
+cd /tmp
+invalid_command
+ls $HOME
+echo hello

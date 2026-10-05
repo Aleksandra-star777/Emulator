@@ -2,11 +2,21 @@ package ru.miem.shell;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.InetAddress;
 
 public class Main {
 
+    private static final int WINDOW_WIDTH = 600;
+    private static final int WINDOW_HEIGHT = 400;
+    private static final String VFS_ARG = "--vfs";
+    private static final String SCRIPT_ARG = "--script";
+
     public static void main(String[] args) {
+        AppConfig config = parseArgs(args);
+
         JFrame window = createWindow();
         JTextArea output = createOutputArea();
         JTextField input = createInputField(output);
@@ -14,13 +24,60 @@ public class Main {
         window.add(new JScrollPane(output), BorderLayout.CENTER);
         window.add(input, BorderLayout.SOUTH);
 
+        printDebugInfo(config, output);
+        runStartupScript(config.scriptPath(), output);
+
         window.setVisible(true);
         input.requestFocusInWindow();
     }
 
+    private static AppConfig parseArgs(String[] args) {
+        String vfsPath = null;
+        String scriptPath = null;
+
+        for (int i = 0; i < args.length - 1; i++) {
+            if (VFS_ARG.equals(args[i])) {
+                vfsPath = args[i + 1];
+            } else if (SCRIPT_ARG.equals(args[i])) {
+                scriptPath = args[i + 1];
+            }
+        }
+        return new AppConfig(vfsPath, scriptPath);
+    }
+
+    private static void printDebugInfo(AppConfig config, JTextArea output) {
+        output.append("=== Отладочный вывод параметров ===\n");
+        output.append("Путь к VFS: " + (config.vfsPath() != null ? config.vfsPath() : "не задан") + "\n");
+        output.append("Путь к скрипту: " + (config.scriptPath() != null ? config.scriptPath() : "не задан") + "\n");
+        output.append("===================================\n\n");
+    }
+
+    private static void runStartupScript(String scriptPath, JTextArea output) {
+        if (scriptPath == null) {
+            return;
+        }
+
+        output.append("--- Выполнение стартового скрипта ---\n");
+        try (BufferedReader reader = new BufferedReader(new FileReader(scriptPath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                output.append("VFS> " + line + "\n");
+                String result = executeCommand(line);
+                output.append(result + "\n");
+            }
+        } catch (IOException e) {
+            output.append("Ошибка выполнения скрипта: " + e.getMessage() + "\n");
+        }
+        output.append("--- Скрипт завершен ---\n\n");
+    }
+
     private static JFrame createWindow() {
         JFrame window = new JFrame();
-        window.setSize(600, 400);
+        window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setLocationRelativeTo(null);
         window.setTitle(buildTitle());
@@ -62,7 +119,7 @@ public class Main {
 
         line = substituteEnvVars(line);
         output.append("VFS> " + line + "\n");
-        executeCommand(line, output);
+        output.append(executeCommand(line) + "\n");
     }
 
     private static String substituteEnvVars(String line) {
@@ -85,16 +142,23 @@ public class Main {
         return line;
     }
 
-    private static void executeCommand(String line, JTextArea output) {
-        String[] parts = line.split(" ");
+    private static String executeCommand(String line) {
+        String[] parts = line.split("\\s+");
+        if (parts.length == 0 || parts[0].isEmpty()) {
+            return "";
+        }
         String cmd = parts[0];
 
         if (cmd.equals("ls") || cmd.equals("cd")) {
-            output.append(line + "\n");
+            return line;
         } else if (cmd.equals("exit")) {
             System.exit(0);
+            return "";
         } else {
-            output.append("Unknown command: " + cmd + "\n");
+            return "Unknown command: " + cmd;
         }
+    }
+
+    private record AppConfig(String vfsPath, String scriptPath) {
     }
 }
